@@ -63,32 +63,6 @@ def updateProduto():
             tabelaProdutoTree.tag_configure("Ncrit", background='white')
 
 
-def JanelaAviso(texto, tamanho):
-    # janela de aviso com botao de ok
-    def avisoDestroy():
-        podeIr = True
-        okClicado = True
-        warningwindow.destroy()
-        return okClicado
-
-    def on_closing():
-        podeIr = True
-        okClicado = False
-        warningwindow.destroy()
-        return okClicado
-
-    podeIr = False
-    warningwindow = tkinter.Toplevel()
-    warningwindow.title("Dados Inadequados")
-    warningwindow.geometry(tamanho)
-    labelErro = tkinter.Label(warningwindow, text=texto)
-    labelErro.grid(row=0, column=0, padx=10, pady=10)
-    botaoOK = tkinter.Button(warningwindow, text="OK", command=lambda: avisoDestroy())
-    botaoOK.grid(row=1, column=0, padx=10, pady=10, ipadx=40)
-    warningwindow.protocol("WM_DELETE_WINDOW", on_closing)
-    warningwindow.wait_variable(podeIr)
-
-
 def submitProduto(NomeProduto, TipoRecipiente, ValorCritico, window):
     # adiciona um produto ao sql
     conn = None
@@ -98,7 +72,7 @@ def submitProduto(NomeProduto, TipoRecipiente, ValorCritico, window):
 
         # insert into table
         if len(NomeProduto.get()) <= 0 or len(TipoRecipiente.get()) <= 0 or len(ValorCritico.get()) <= 0 or type(NomeProduto.get()) != str or type(TipoRecipiente.get()) != str:
-            JanelaAviso("Os dados inseridos para criação do produto não correspondem ao tipo correto", "430x200")
+            messagebox.showwarning("Atenção", "Os dados inseridos para criação do produto não correspondem ao tipo correto")
         else:
             cur.execute("SELECT * FROM Produto")
             IDproduto = len(cur.fetchall())
@@ -214,7 +188,7 @@ def janelaAdicionar():
         buttonSubmitO.grid(row=3, column=1, padx=10, pady=30, ipadx=30)
         conn.close()
     else:
-        JanelaAviso("Erro: selecione um produto antes de adicionar unidade", "270x100")
+        messagebox.showwarning("Aviso", "Selecione um produto para adicionar unidades")
 
 
 def submitAdicionar(entryValidade, clicked, produtoSelecionadoID, quantidade, janelaAdicionar):
@@ -233,9 +207,9 @@ def submitAdicionar(entryValidade, clicked, produtoSelecionadoID, quantidade, ja
     hoje = datetime.datetime.today()
 
     if len(entryValidade) <= 0 or len(clicked) <= 0 or len(quantidade) <= 0 or testQuantidade or testValidade:
-        JanelaAviso("Os dados oferecidos para adicionar unidades não correspondem aos tipos corretos", "470x100")
+        messagebox.showwarning("Aviso", "Os dados oferecidos para adicionar unidades não correspondem aos tipos corretos")
     elif validade < hoje:
-        JanelaAviso("Não é possível realizar entrada de um produto vencido", "370x100")
+        messagebox.showerror("Erro", "Não é possível registrar entrada de um produto vencido")
     else:
         conn = sqlite3.connect("estoqueRe.db")
         cur = conn.cursor()
@@ -284,9 +258,9 @@ def deleteProduto():
             conn.commit()
             conn.close()
             updateProduto()
-            JanelaAviso("Produto Excluído", "120x100")
+            messagebox.showinfo("Aviso", "Produto excluído com sucesso")
     else:
-        JanelaAviso("Nenhum produto selecionado", "280x100")
+        messagebox.showwarning("Aviso", "Selecione um produto para excluir")
 
 
 def fixed_map(option):
