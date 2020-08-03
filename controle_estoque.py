@@ -276,69 +276,70 @@ def fixed_map(option):
             elm[:2] != ('!disabled', '!selected')]
 
 
-# create database
-conn = sqlite3.connect("estoqueRe.db")
-# create cursor
-cur = conn.cursor()
+if __name__ == "__main__":
+    # create database
+    conn = sqlite3.connect("estoqueRe.db")
+    # create cursor
+    cur = conn.cursor()
 
-# create table
-cur.execute("""CREATE TABLE IF NOT EXISTS Produto(
-    nome_produto text,
-    recipiente text,
-    valorCritico integer,
-    estoque integer,
-    ID integer  )""")
+    # create table
+    cur.execute("""CREATE TABLE IF NOT EXISTS Produto(
+        nome_produto text,
+        recipiente text,
+        valorCritico integer,
+        estoque integer,
+        ID integer  )""")
 
-cur.execute("""CREATE TABLE IF NOT EXISTS UnidadeE(
-    validade text,
-    dataEntrada text,
-    funEntrada text,
-    ID integer  )""")
+    cur.execute("""CREATE TABLE IF NOT EXISTS UnidadeE(
+        validade text,
+        dataEntrada text,
+        funEntrada text,
+        ID integer  )""")
 
-cur.execute("""CREATE TABLE IF NOT EXISTS UnidadeS(
-    validade text,
-    dataSaida text,
-    funSaida text,
-    ID integer  )""")
+    cur.execute("""CREATE TABLE IF NOT EXISTS UnidadeS(
+        validade text,
+        dataSaida text,
+        funSaida text,
+        ID integer  )""")
 
-# faz as mudancas
-# cria janela
-root = tkinter.Tk()
-root.title('Controle de Estoque - HU')
-root.geometry("1000x380")
+    # faz as mudancas
+    # cria janela
+    root = tkinter.Tk()
+    root.title('Controle de Estoque - HU')
+    root.geometry("1000x380")
 
-style = ttk.Style()
-style.map('Treeview', foreground=fixed_map('foreground'),
-          background=fixed_map('background'))
+    style = ttk.Style()
+    style.map('Treeview', foreground=fixed_map('foreground'),
+            background=fixed_map('background'))
 
-col_count, row_count = root.grid_size()
-for col in range(4):
-    root.grid_columnconfigure(col, weight=1)
+    col_count, row_count = root.grid_size()
+    for col in range(4):
+        root.grid_columnconfigure(col, weight=1)
 
-botaoProduto = tkinter.Button(root, text="Criar Novo Produto", command=lambda: janelaProduto())
-botaoProduto.grid(row=0, column=0, padx=0, pady=10)
-botaoAdUnidade = tkinter.Button(root, text="Adicionar Unidades", command=lambda: janelaAdicionar())
-botaoAdUnidade.grid(row=0, column=1, padx=0, pady=10)
-botaoReUnidade = tkinter.Button(root, text="Remover Unidades", command=lambda: janelaRemover())
-botaoReUnidade.grid(row=0, column=2, padx=0, pady=10)
-botaoDeleteProduto = tkinter.Button(root, text="Excluir Produto", command=lambda: deleteProduto())
-botaoDeleteProduto.grid(row=0, column=3, padx=0, pady=10)
-cursorzito = cur.execute("SELECT nome_produto FROM Produto")
-produto = cursorzito.fetchall()
+    botaoProduto = tkinter.Button(root, text="Criar Novo Produto", command=lambda: janelaProduto())
+    botaoProduto.grid(row=0, column=0, padx=0, pady=10)
+    botaoAdUnidade = tkinter.Button(root, text="Adicionar Unidades", command=lambda: janelaAdicionar())
+    botaoAdUnidade.grid(row=0, column=1, padx=0, pady=10)
+    botaoReUnidade = tkinter.Button(root, text="Remover Unidades", command=lambda: janelaRemover())
+    botaoReUnidade.grid(row=0, column=2, padx=0, pady=10)
+    botaoDeleteProduto = tkinter.Button(root, text="Excluir Produto", command=lambda: deleteProduto())
+    botaoDeleteProduto.grid(row=0, column=3, padx=0, pady=10)
+    cursorzito = cur.execute("SELECT nome_produto FROM Produto")
+    produto = cursorzito.fetchall()
 
-tabelaProdutoFrame = tkinter.LabelFrame(root, text="Produtos", height=300, width=400)
-tabelaProdutoFrame.grid(row=1, columnspan=4, padx=10, pady=10)
-tabelaProdutoTree = ttk.Treeview(tabelaProdutoFrame, columns=(1, 2, 3, 4, 5), show="headings", height="13")
-tabelaProdutoTree.pack()
-tabelaProdutoTree.heading(1, text="Nome do Produto")
-tabelaProdutoTree.heading(2, text="Tipo do Recipiente")
-tabelaProdutoTree.heading(3, text="Valor Crítico")
-tabelaProdutoTree.heading(4, text="Estoque Atual")
-tabelaProdutoTree.heading(5, text="ID")
-scrollTabelaProduto = ttk.Scrollbar(root, orient="vertical", command=tabelaProdutoTree.yview)
-scrollTabelaProduto.place(x=971, y=75, height=283)
-tabelaProdutoTree.bind('<ButtonRelease-1>', lambda Treeview: select_item(tabelaProdutoTree))
-updateProduto()
-conn.commit()
-conn.close()
-root.mainloop()
+    tabelaProdutoFrame = tkinter.LabelFrame(root, text="Produtos", height=300, width=400)
+    tabelaProdutoFrame.grid(row=1, columnspan=4, padx=10, pady=10)
+    tabelaProdutoTree = ttk.Treeview(tabelaProdutoFrame, columns=(1, 2, 3, 4, 5), show="headings", height="13")
+    tabelaProdutoTree.pack()
+    tabelaProdutoTree.heading(1, text="Nome do Produto")
+    tabelaProdutoTree.heading(2, text="Tipo do Recipiente")
+    tabelaProdutoTree.heading(3, text="Valor Crítico")
+    tabelaProdutoTree.heading(4, text="Estoque Atual")
+    tabelaProdutoTree.heading(5, text="ID")
+    scrollTabelaProduto = ttk.Scrollbar(root, orient="vertical", command=tabelaProdutoTree.yview)
+    scrollTabelaProduto.place(x=971, y=75, height=283)
+    tabelaProdutoTree.bind('<ButtonRelease-1>', lambda Treeview: select_item(tabelaProdutoTree))
+    updateProduto()
+    conn.commit()
+    conn.close()
+    root.mainloop()
