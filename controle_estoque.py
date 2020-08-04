@@ -132,7 +132,7 @@ def janelaAdicionar():
 
         nameWindow = tkinter.Toplevel()
         nameWindow.title("Nome")
-        nameWindow.geometry("250x100")
+        nameWindow.geometry("270x100")
 
         nomeEntry = tkinter.Entry(nameWindow, width=20)
         nomeEntry.grid(row=0, column=1, padx=10, pady=10)
@@ -154,6 +154,10 @@ def janelaAdicionar():
         cur.execute("SELECT funEntrada FROM UnidadeE")
         nomeTabela = cur.fetchall()
         for nome in nomeTabela:
+            nomes.append(nome[0])
+        cur.execute("SELECT funSaida FROM UnidadeS")
+        nomeTabelaS = cur.fetchall()
+        for nome in nomeTabelaS:
             nomes.append(nome[0])
 
         nomes.append("nenhum")
@@ -228,13 +232,6 @@ def submitAdicionar(entryValidade, clicked, produtoSelecionadoID, quantidade, ja
         janelaAdicionar.destroy()
 
 
-def janelaRemover():
-    # cria nova janela
-    newWindow = tkinter.Toplevel(root)
-    newWindow.title("Remover")
-    newWindow.geometry("200x200")
-
-
 def select_item(Treeview):
     # seleciona linha em tabela do tipo treeview
     Treeitems = Treeview.selection()
@@ -242,6 +239,124 @@ def select_item(Treeview):
     for ite in Treeitems:
         wholeData.append(Treeview.item(ite)['values'])
     return wholeData
+
+def janelaRemover():
+    # cria janela para adicionar unidades ao produto
+    def nomeJanela(optionNomes):
+        def nomeSubmit(nome):
+            optionNomes["menu"].add_command(label=nome, command=tkinter._setit(clicked, nome))
+            nameWindow.destroy()
+
+        nameWindow = tkinter.Toplevel()
+        nameWindow.title("Nome")
+        nameWindow.geometry("270x100")
+
+        nomeEntry = tkinter.Entry(nameWindow, width=20)
+        nomeEntry.grid(row=0, column=1, padx=10, pady=10)
+        nomeLabel = tkinter.Label(nameWindow, text="Nome: ")
+        nomeLabel.grid(row=0, column=0, padx=10, pady=10)
+
+        buttonSubmit = tkinter.Button(nameWindow, text="OK", command=lambda: nomeSubmit(nomeEntry.get()))
+        buttonSubmit.grid(row=1, column=1, padx=10, pady=10, ipadx=20)
+        buttonCancela = tkinter.Button(nameWindow, text="Cancelar", command=lambda: nameWindow.destroy)
+        buttonCancela.grid(row=1, column=0, padx=10, pady=10, ipadx=20)
+
+    conn = sqlite3.connect("estoqueRe.db")
+    cur = conn.cursor()
+    nomes = []
+    duplicates = []
+    produtoSelecionado = select_item(tabelaProdutoTree)
+
+    if len(produtoSelecionado) > 0:
+        cur.execute("SELECT funEntrada FROM UnidadeE")
+        nomeTabela = cur.fetchall()
+        for nome in nomeTabela:
+            nomes.append(nome[0])
+
+        cur.execute("SELECT funSaida FROM UnidadeS")
+        nomeTabelaS = cur.fetchall()
+        for nome in nomeTabelaS:
+            nomes.append(nome[0])
+
+
+        nomes.append("nenhum")
+        for i in nomes:
+            if i not in duplicates:
+                duplicates.append(i)
+
+        newWindow = tkinter.Toplevel()
+        newWindow.title("Remover unidades")
+        newWindow.geometry("370x200")
+
+        entryQuantidade = tkinter.Entry(newWindow, width=10)
+        entryQuantidade.grid(row=1, column=1, padx=10, pady=10)
+        labelQuantidade = tkinter.Label(newWindow, text="Quantidade: ")
+        labelQuantidade.grid(row=1, column=0, padx=10, pady=10)
+
+        clicked = tkinter.StringVar(newWindow)
+        optionNomes = tkinter.OptionMenu(newWindow, clicked, *duplicates)
+        clicked.set("nenhum")
+        optionNomes.grid(row=2, column=1, padx=10, pady=10, ipadx=50)
+        buttonNome = tkinter.Button(newWindow, text="Novo Nome", command=lambda: nomeJanela(optionNomes))
+        buttonNome.grid(row=2, column=0, padx=10, pady=10, ipadx=30)
+
+        buttonCancelaO = tkinter.Button(newWindow, text="Cancelar", command=lambda: newWindow.destroy())
+        buttonCancelaO.grid(row=3, column=0, padx=10, pady=30, ipadx=30)
+        buttonSubmitO = tkinter.Button(newWindow, text="OK", command=lambda: submitRemover(clicked.get(), produtoSelecionado[0][4], entryQuantidade.get(), newWindow))
+        buttonSubmitO.grid(row=3, column=1, padx=10, pady=30, ipadx=30)
+        conn.close()
+    else:
+        messagebox.showwarning("Aviso", "Selecione um produto para remover unidades")
+
+    def nearest(items, pivot):
+        return min(items, key=lambda x: abs(x - pivot))
+
+    def submitRemover(clicked, produtoSelecionadoID, quantidade, janelaRemover):
+        #remove unidades do sql 
+        testQuantidade = False
+        try:
+            quantidadeInt = int(quantidade)
+        except:
+            testQuantidade = True
+
+        hoje = datetime.datetime.today()
+        if len(clicked) <= 0 or len(quantidade) <= 0 or testQuantidade:
+            messagebox.showwarning("Aviso", "Os dados oferecidos para remover unidades não correspondem aos tipos corretos")
+        else:
+            conn = sqlite3.connect("estoqueRe.db")
+            cur = conn.cursor()
+            hojeStr = hoje.strftime("%d/%m/%Y")
+            cur.execute("SELECT validade FROM UnidadeE WHERE ID = ?;", str(produtoSelecionadoID))
+            validadesEntrada = cur.fetchall()
+            validadesStr = []
+            for validade in validadesEntrada:
+                validadesStr.append(validade[0])
+
+            validades = []
+            for validade in validadesStr:
+                obj = datetime.datetime.strptime(validade, "%d/%m/%Y")
+                validades.append(obj)
+
+            for i in range(quantidadeInt):
+
+                entryValidade = nearest(validades, hoje)
+                print(entryValidade)
+
+                cur.execute("INSERT INTO UnidadeS VALUES (:validade, :dataSaida, :funSaida, :ID)",
+                            {
+                                'validade': entryValidade,
+                                'dataSaida': hojeStr,
+                                'funSaida': clicked,
+                                'ID': produtoSelecionadoID
+                            })
+            conn.commit()
+            conn.close()
+            updateProduto()
+            janelaRemover.destroy()
+
+
+
+
 
 
 def deleteProduto():
