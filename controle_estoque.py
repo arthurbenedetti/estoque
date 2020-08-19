@@ -308,8 +308,11 @@ def janelaRemover():
     else:
         messagebox.showwarning("Aviso", "Selecione um produto para remover unidades")
 
-    def nearest(items, pivot):
-        return min(items, key=lambda x: abs(x - pivot))
+
+
+
+    def oldest(items):
+        return min(items)
 
     def submitRemover(clicked, produtoSelecionadoID, quantidade, janelaRemover):
         #remove unidades do sql 
@@ -319,9 +322,21 @@ def janelaRemover():
         except:
             testQuantidade = True
 
+        conn = sqlite3.connect("estoqueRe.db")
+        cur = conn.cursor()
+        cur.execute("SELECT estoque FROM Produto WHERE ID = ?;", str(produtoSelecionadoID))
+        estoquePro = cur.fetchall()
+        estoqueProd = estoquePro[0][0]
+        conn.commit()
+        conn.close()
+
+
         hoje = datetime.datetime.today()
         if len(clicked) <= 0 or len(quantidade) <= 0 or testQuantidade:
             messagebox.showwarning("Aviso", "Os dados oferecidos para remover unidades não correspondem aos tipos corretos")
+        elif quantidadeInt > estoqueProd:
+            messagebox.showwarning("Aviso", "A quantidade removida é maior que o estoque")
+
         else:
             conn = sqlite3.connect("estoqueRe.db")
             cur = conn.cursor()
@@ -339,8 +354,10 @@ def janelaRemover():
 
             for i in range(quantidadeInt):
 
-                entryValidade = nearest(validades, hoje)
-                print(entryValidade)
+                entryValidade = oldest(validades).strftime("%d/%m/%Y")
+
+
+
 
                 cur.execute("INSERT INTO UnidadeS VALUES (:validade, :dataSaida, :funSaida, :ID)",
                             {
@@ -353,6 +370,80 @@ def janelaRemover():
             conn.close()
             updateProduto()
             janelaRemover.destroy()
+
+#WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWaquiiiiiWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+
+
+    
+def submitJanelaRelatorio():
+    produtoSelecionadoi = select_item(tabelaProdutoTree)
+    produtoSelecionado = produtoSelecionadoi[0][4]
+    if len(produtoSelecionadoi) > 0:
+
+        newWindow = tkinter.Toplevel()
+        newWindow.title("Histórico do produto")
+        newWindow.geometry("850x530")
+        tabelaHistoricoFrame = tkinter.LabelFrame(newWindow, text="Histórico entrada", height=200, width=300)
+        tabelaHistoricoFrame.grid(row=1, columnspan=4, padx=(10,0), pady=10)
+        tabelaHistoricoTree = ttk.Treeview(tabelaHistoricoFrame, columns=(1, 2, 3, 4), show="headings", height="10")
+        tabelaHistoricoTree.pack()
+        tabelaHistoricoTree.heading(1, text="Validade")
+        tabelaHistoricoTree.heading(2, text="data entrada")
+        tabelaHistoricoTree.heading(3, text="nome entrada")
+        tabelaHistoricoTree.heading(4, text="id")
+        scrollHistoricoProduto = ttk.Scrollbar(newWindow, orient="vertical", command=tabelaHistoricoTree.yview)
+        scrollHistoricoProduto.grid(row=1, column=4, pady=(20,10), sticky='ns')
+
+        tabelaHistorico1Frame = tkinter.LabelFrame(newWindow, text="Histórico saída", height=200, width=300)
+        tabelaHistorico1Frame.grid(row=2, columnspan=4, padx=(10,0), pady=10)
+        tabelaHistorico1Tree = ttk.Treeview(tabelaHistorico1Frame, columns=(1, 2, 3, 4), show="headings", height="10")
+        tabelaHistorico1Tree.pack()
+        tabelaHistorico1Tree.heading(1, text="Validade")
+        tabelaHistorico1Tree.heading(2, text="data saida")
+        tabelaHistorico1Tree.heading(3, text="nome saida")
+        tabelaHistorico1Tree.heading(4, text="id")
+        scrollHistorico1Produto = ttk.Scrollbar(newWindow, orient="vertical", command=tabelaHistorico1Tree.yview)
+        scrollHistorico1Produto.grid(row=2, column=4, pady=(20,10), sticky='ns')
+
+        for i in tabelaHistoricoTree.get_children():
+            tabelaHistoricoTree.delete(i)
+        for i in tabelaHistorico1Tree.get_children():
+            tabelaHistorico1Tree.delete(i)
+
+        conn = sqlite3.connect("estoqueRe.db")
+        cur = conn.cursor()
+        cur.execute("SELECT Validade, dataEntrada, funEntrada FROM UnidadeE WHERE ID = ?;", str(produtoSelecionado))
+        rowsE = cur.fetchall()
+        cur.execute("SELECT Validade, dataSaida, funSaida FROM UnidadeS WHERE ID = ?;", str(produtoSelecionado))
+        rowsS = cur.fetchall()
+        conn.commit()
+        conn.close()
+
+        rowsE.sort()
+        rowsS.sort()
+        superLista = []
+        k = 0
+        for i in rowsE:
+            k+=1
+            lista = list(i)
+            lista.append(k)
+            tabelaHistoricoTree.insert('', 'end', values=lista)
+            
+        j = 0
+        for i in rowsS:
+            j+=1
+            lista = list(i)
+            lista.append(j)
+            tabelaHistorico1Tree.insert('', 'end', values=lista)
+
+
+
+    else:
+        messagebox.showwarning("Aviso", "Selecione um produto para ver o histórico")
+        
+
+
+    
 
 
 
@@ -376,6 +467,7 @@ def deleteProduto():
             messagebox.showinfo("Aviso", "Produto excluído com sucesso")
     else:
         messagebox.showwarning("Aviso", "Selecione um produto para excluir")
+
 
 
 def fixed_map(option):
@@ -428,22 +520,24 @@ if __name__ == "__main__":
             background=fixed_map('background'))
 
     col_count, row_count = root.grid_size()
-    for col in range(4):
+    for col in range(5):
         root.grid_columnconfigure(col, weight=1)
 
     botaoProduto = tkinter.Button(root, text="Criar Novo Produto", command=lambda: janelaProduto())
-    botaoProduto.grid(row=0, column=0, padx=0, pady=10)
+    botaoProduto.grid(row=0, column=0, padx=10, pady=10)
     botaoAdUnidade = tkinter.Button(root, text="Adicionar Unidades", command=lambda: janelaAdicionar())
-    botaoAdUnidade.grid(row=0, column=1, padx=0, pady=10)
+    botaoAdUnidade.grid(row=0, column=1, padx=10, pady=10)
     botaoReUnidade = tkinter.Button(root, text="Remover Unidades", command=lambda: janelaRemover())
-    botaoReUnidade.grid(row=0, column=2, padx=0, pady=10)
+    botaoReUnidade.grid(row=0, column=2, padx=10, pady=10)
     botaoDeleteProduto = tkinter.Button(root, text="Excluir Produto", command=lambda: deleteProduto())
-    botaoDeleteProduto.grid(row=0, column=3, padx=0, pady=10)
+    botaoDeleteProduto.grid(row=0, column=3, padx=10, pady=10)
+    botaoEstatisticaProdutos = tkinter.Button(root, text="Histórico", command=lambda: submitJanelaRelatorio())
+    botaoEstatisticaProdutos.grid(row=0, column=4, padx=10, pady=10)
     cursorzito = cur.execute("SELECT nome_produto FROM Produto")
     produto = cursorzito.fetchall()
 
     tabelaProdutoFrame = tkinter.LabelFrame(root, text="Produtos", height=300, width=400)
-    tabelaProdutoFrame.grid(row=1, columnspan=4, padx=10, pady=10)
+    tabelaProdutoFrame.grid(row=1, columnspan=5, padx=(10,0), pady=10)
     tabelaProdutoTree = ttk.Treeview(tabelaProdutoFrame, columns=(1, 2, 3, 4, 5), show="headings", height="13")
     tabelaProdutoTree.pack()
     tabelaProdutoTree.heading(1, text="Nome do Produto")
@@ -452,7 +546,7 @@ if __name__ == "__main__":
     tabelaProdutoTree.heading(4, text="Estoque Atual")
     tabelaProdutoTree.heading(5, text="ID")
     scrollTabelaProduto = ttk.Scrollbar(root, orient="vertical", command=tabelaProdutoTree.yview)
-    scrollTabelaProduto.place(x=971, y=75, height=283)
+    scrollTabelaProduto.grid(row=1, column=5, pady=(20,10), sticky='ns')
     tabelaProdutoTree.bind('<ButtonRelease-1>', lambda Treeview: select_item(tabelaProdutoTree))
     updateProduto()
     conn.commit()
